@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个性化碳循环计划生成器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+        .macros-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .macros-table th, .macros-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        .macros-table th {
+            background-color: #f2f2f2;
+        }
+        .high-carb {
+            background-color: #d5f5e3;
+        }
+        .medium-carb {
+            background-color: #fef9e7;
+        }
+        .low-carb {
+            background-color: #fadbd8;
+        }
+        .summary {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            margin-top: 30px;
+            height: 300px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>个性化碳循环计划生成器</h1>
+    
+    <div class="container">
+        <h2>基本信息</h2>
+        <div class="form-group">
+            <label for="gender">性别</label>
+            <select id="gender">
+                <option value="male">男</option>
+                <option value="female">女</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="age">年龄</label>
+            <input type="number" id="age" min="15" max="100" value="30">
+        </div>
+        
+        <div class="form-group">
+            <label for="height">身高 (cm)</label>
+            <input type="number" id="height" min="140" max="220" value="175">
+        </div>
+        
+        <div class="form-group">
+            <label for="weight">体重 (kg)</label>
+            <input type="number" id="weight" min="40" max="150" value="70">
+        </div>
+        
+        <div class="form-group">
+            <label for="activity">活动水平</label>
+            <select id="activity">
+                <option value="1.2">久坐 (很少运动)</option>
+                <option value="1.375">轻度活动 (每周1-3天运动)</option>
+                <option value="1.55" selected>中度活动 (每周3-5天运动)</option>
+                <option value="1.725">高度活动 (每周6-7天运动)</option>
+                <option value="1.9">极高活动 (体力劳动或每天训练)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="goal">目标</label>
+            <select id="goal">
+                <option value="cut">减脂</option>
+                <option value="maintain" selected>维持</option>
+                <option value="bulk">增肌</option>
+            </select>
+        </div>
+        
+        <button onclick="calculateMacros()">生成碳循环计划</button>
+    </div>
+    
+    <div id="results" class="container results">
+        <h2>您的碳循环计划</h2>
+        
+        <div class="summary">
+            <p><strong>基础代谢率 (BMR):</strong> <span id="bmr-result">0</span> kcal/天</p>
+            <p><strong>每日总能量消耗 (TDEE):</strong> <span id="tdee-result">0</span> kcal/天</p>
+            <p><strong>每日目标热量:</strong> <span id="goal-calories">0</span> kcal/天</p>
+            <p><strong>蛋白质摄入:</strong> <span id="protein-grams">0</span> g/天 (1.6g/kg体重)</p>
+            <p><strong>脂肪摄入:</strong> <span id="fat-grams">0</span> g/天 (1g/kg体重)</p>
+        </div>
+        
+        <h3>每日营养素分配</h3>
+        <table class="macros-table">
+            <thead>
+                <tr>
+                    <th>训练日类型</th>
+                    <th class="high-carb">高碳日</th>
+                    <th class="medium-carb">中碳日</th>
+                    <th class="low-carb">低碳日</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>碳水化合物 (g)</td>
+                    <td class="high-carb" id="high-carb">0</td>
+                    <td class="medium-carb" id="med-carb">0</td>
+                    <td class="low-carb" id="low-carb">0</td>
+                </tr>
+                <tr>
+                    <td>蛋白质 (g)</td>
+                    <td class="high-carb" id="protein-high">0</td>
+                    <td class="medium-carb" id="protein-med">0</td>
+                    <td class="low-carb" id="protein-low">0</td>
+                </tr>
+                <tr>
+                    <td>脂肪 (g)</td>
+                    <td class="high-carb" id="fat-high">0</td>
+                    <td class="medium-carb" id="fat-med">0</td>
+                    <td class="low-carb" id="fat-low">0</td>
+                </tr>
+                <tr>
+                    <td>总热量 (kcal)</td>
+                    <td class="high-carb" id="calories-high">0</td>
+                    <td class="medium-carb" id="calories-med">0</td>
+                    <td class="low-carb" id="calories-low">0</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="chart-container">
+            <canvas id="macrosChart"></canvas>
+        </div>
+        
+        <h3>使用建议</h3>
+        <ul>
+            <li><strong>高碳日:</strong> 安排在高强度训练日，如腿部训练或全身训练</li>
+            <li><strong>中碳日:</strong> 中等强度训练日，如上肢训练</li>
+            <li><strong>低碳日:</strong> 休息日或低强度有氧日</li>
+            <li>每周建议分配: 2-3天高碳日，3天中碳日，2-3天低碳日</li>
+            <li>根据体重变化和训练感受每2-4周调整一次</li>
+        </ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let macrosChart = null;
+        
+        function calculateMacros() {
+            // 获取用户输入
+            const gender = document.getElementById('gender').value;
+            const age = parseInt(document.getElementById('age').value);
+            const height = parseInt(document.getElementById('height').value);
+            const weight = parseInt(document.getElementById('weight').value);
+            const activity = parseFloat(document.getElementById('activity').value);
+            const goal = document.getElementById('goal').value;
+            
+            // 计算BMR
+            let bmr;
+            if (gender === 'male') {
+                bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+            } else {
+                bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            }
+            
+            // 计算TDEE
+            const tdee = bmr * activity;
+            
+            // 根据目标调整热量
+            let goalCalories;
+            switch(goal) {
+                case 'cut':
+                    goalCalories = tdee - 500;
+                    break;
+                case 'bulk':
+                    goalCalories = tdee + 300;
+                    break;
+                default:
+                    goalCalories = tdee;
+            }
+            
+            // 计算蛋白质和脂肪
+            const proteinGrams = Math.round(1.6 * weight);
+            const fatGrams = Math.round(weight);
+            
+            // 计算碳水的三种分配方式
+            const proteinCalories = proteinGrams * 4;
+            const fatCalories = fatGrams * 9;
+            
+            // 高碳日 (50%碳水)
+            const highCarbCalories = goalCalories * 0.5;
+            const highCarbGrams = Math.round((highCarbCalories - proteinCalories - fatCalories) / 4);
+            
+            // 中碳日 (40%碳水)
+            const medCarbCalories = goalCalories * 0.4;
+            const medCarbGrams = Math.round((medCarbCalories - proteinCalories - fatCalories) / 4);
+            
+            // 低碳日 (20%碳水)
+            const lowCarbCalories = goalCalories * 0.2;
+            const lowCarbGrams = Math.round((lowCarbCalories - proteinCalories - fatCalories) / 4);
+            
+            // 显示结果
+            document.getElementById('bmr-result').textContent = Math.round(bmr);
+            document.getElementById('tdee-result').textContent = Math.round(tdee);
+            document.getElementById('goal-calories').textContent = Math.round(goalCalories);
+            document.getElementById('protein-grams').textContent = proteinGrams;
+            document.getElementById('fat-grams').textContent = fatGrams;
+            
+            document.getElementById('high-carb').textContent = highCarbGrams;
+            document.getElementById('med-carb').textContent = medCarbGrams;
+            document.getElementById('low-carb').textContent = lowCarbGrams;
+            
+            document.getElementById('protein-high').textContent = proteinGrams;
+            document.getElementById('protein-med').textContent = proteinGrams;
+            document.getElementById('protein-low').textContent = proteinGrams;
+            
+            document.getElementById('fat-high').textContent = fatGrams;
+            document.getElementById('fat-med').textContent = fatGrams;
+            document.getElementById('fat-low').textContent = fatGrams;
+            
+            document.getElementById('calories-high').textContent = Math.round(highCarbGrams * 4 + proteinGrams * 4 + fatGrams * 9);
+            document.getElementById('calories-med').textContent = Math.round(medCarbGrams * 4 + proteinGrams * 4 + fatGrams * 9);
+            document.getElementById('calories-low').textContent = Math.round(lowCarbGrams * 4 + proteinGrams * 4 + fatGrams * 9);
+            
+            // 显示结果区域
+            document.getElementById('results').style.display = 'block';
+            
+            // 更新图表
+            updateChart(highCarbGrams, medCarbGrams, lowCarbGrams, proteinGrams, fatGrams);
+        }
+        
+        function updateChart(highCarb, medCarb, lowCarb, protein, fat) {
+            const ctx = document.getElementById('macrosChart').getContext('2d');
+            
+            // 如果图表已存在，先销毁
+            if (macrosChart) {
+                macrosChart.destroy();
+            }
+            
+            macrosChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['高碳日', '中碳日', '低碳日'],
+                    datasets: [
+                        {
+                            label: '碳水化合物 (g)',
+                            data: [highCarb, medCarb, lowCarb],
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '蛋白质 (g)',
+                            data: [protein, protein, protein],
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '脂肪 (g)',
+                            data: [fat, fat, fat],
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '克数 (g)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '训练日类型'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '碳循环营养素分配'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const dataIndex = context[0].dataIndex;
+                                    let recommendation = '';
+                                    
+                                    if (dataIndex === 0) {
+                                        recommendation = '建议: 高强度训练日';
+                                    } else if (dataIndex === 1) {
+                                        recommendation = '建议: 中等强度训练日';
+                                    } else {
+                                        recommendation = '建议: 休息/低强度日';
+                                    }
+                                    
+                                    return recommendation;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
